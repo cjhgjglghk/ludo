@@ -153,14 +153,14 @@ export default function Room() {
 
   const handleRoll = useCallback(() => {
     setRolling(true);
-    const payload = isHost && isMyTurn ? { selectedValue: selectedDice } : {};
+    const payload = room?.hostId === selfId && game?.currentTurnPlayerId === selfId ? { selectedValue: selectedDice } : {};
     socket.emit('roll-dice', payload, (res) => {
       if (!res?.ok) {
         setRolling(false);
         showToast(res?.error || 'Could not roll', 'error');
       }
     });
-  }, [showToast, isHost, isMyTurn, selectedDice]);
+  }, [showToast, room, selfId, game, selectedDice]);
 
   const handleTokenClick = useCallback(
     (tokenId) => {
