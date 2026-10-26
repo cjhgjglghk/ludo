@@ -68,8 +68,10 @@ function currentPlayer(game) {
 }
 
 /** Roll the die for the current player. Returns { value, movableTokens }. */
-function rollDice(game) {
-  const value = 1 + Math.floor(Math.random() * 6);
+function rollDice(game, selectedValue = null) {
+  const value = Number.isInteger(selectedValue) && selectedValue >= 1 && selectedValue <= 6
+    ? selectedValue
+    : 1 + Math.floor(Math.random() * 6);
   game.diceValue = value;
   game.diceRolled = true;
 
