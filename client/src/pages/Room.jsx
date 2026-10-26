@@ -27,6 +27,8 @@ export default function Room() {
   const [winnerInfo, setWinnerInfo] = useState(null);
   const [copied, setCopied] = useState(false);
   const [muted, setMutedState] = useState(isMuted());
+  const [selectedDice, setSelectedDice] = useState(6);
+  const [dicePickerOpen, setDicePickerOpen] = useState(false);
 
   const selfIdRef = useRef(selfId);
   selfIdRef.current = selfId;
@@ -151,13 +153,14 @@ export default function Room() {
 
   const handleRoll = useCallback(() => {
     setRolling(true);
-    socket.emit('roll-dice', {}, (res) => {
+    const payload = isHost && isMyTurn ? { selectedValue: selectedDice } : {};
+    socket.emit('roll-dice', payload, (res) => {
       if (!res?.ok) {
         setRolling(false);
         showToast(res?.error || 'Could not roll', 'error');
       }
     });
-  }, [showToast]);
+  }, [showToast, isHost, isMyTurn, selectedDice]);
 
   const handleTokenClick = useCallback(
     (tokenId) => {
@@ -309,6 +312,23 @@ export default function Room() {
                   <p className="text-xs text-white/40">No valid moves — passing turn…</p>
                 )}
               </div>
+{isHost && isMyTurn && !game.diceRolled && (
+                  <div className="relative">
+                    <button type="button" onClick={() => setDicePickerOpen((open) => !open)} className="rounded-full border border-accent/40 bg-board-bg/70 px-3 py-2 text-xs text-accent hover:bg-accent/10">
+                      Pick dice: {selectedDice} ▾
+                    </button>
+                    {dicePickerOpen && (
+                      <div className="absolute right-0 top-full z-30 mt-2 grid grid-cols-3 gap-2 rounded-xl border border-white/15 bg-slate-900 p-3 shadow-2xl">
+                        {[1, 2, 3, 4, 5, 6].map((number) => (
+                          <button key={number} type="button" onClick={() => { setSelectedDice(number); setDicePickerOpen(false); }} className={`h-9 w-9 rounded-lg font-bold ${selectedDice === number ? 'bg-accent text-board-bg' : 'bg-white/10 text-white hover:bg-white/20'}`} aria-pressed={selectedDice === number}>
+                            {number}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <p className="mt-1 text-[10px] text-white/40">Host custom dice · friends roll randomly</p>
+                  </div>
+                )}
               <Dice
                 value={game.diceValue}
                 rolling={rolling}
@@ -338,6 +358,23 @@ export default function Room() {
                   </p>
                   <TurnTimer deadline={game.turnDeadline} />
                 </div>
+{isHost && isMyTurn && !game.diceRolled && (
+                  <div className="relative">
+                    <button type="button" onClick={() => setDicePickerOpen((open) => !open)} className="rounded-full border border-accent/40 bg-board-bg/70 px-3 py-2 text-xs text-accent hover:bg-accent/10">
+                      Pick dice: {selectedDice} ▾
+                    </button>
+                    {dicePickerOpen && (
+                      <div className="absolute right-0 top-full z-30 mt-2 grid grid-cols-3 gap-2 rounded-xl border border-white/15 bg-slate-900 p-3 shadow-2xl">
+                        {[1, 2, 3, 4, 5, 6].map((number) => (
+                          <button key={number} type="button" onClick={() => { setSelectedDice(number); setDicePickerOpen(false); }} className={`h-9 w-9 rounded-lg font-bold ${selectedDice === number ? 'bg-accent text-board-bg' : 'bg-white/10 text-white hover:bg-white/20'}`} aria-pressed={selectedDice === number}>
+                            {number}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <p className="mt-1 text-[10px] text-white/40">Host custom dice · friends roll randomly</p>
+                  </div>
+                )}
                 <Dice
                   value={game.diceValue}
                   rolling={rolling}
