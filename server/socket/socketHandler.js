@@ -131,7 +131,7 @@ function initSocket(io) {
     });
 
     // ---------- ROLL DICE ----------
-    socket.on('roll-dice', (_, callback) => {
+    socket.on('roll-dice', (payload = {}, callback) => {
       const meta = socketMeta.get(socket.id);
       if (!meta) return;
       const room = getRoom(meta.roomCode);
@@ -146,7 +146,19 @@ function initSocket(io) {
         return callback?.({ ok: false, error: 'You already rolled.' });
       }
 
-      const { value, movableTokens } = rollDice(game);
+      // The room host may select a custom value for their own turn only.
+      // Other players always get a server-generated random roll.
+      const hasSelectedValue = payload && Object.prototype.hasOwnProperty.call(payload, 'selectedValue');
+      if (hasSelectedValue && room.hostId !== socket.id) {
+        return callback?.({ ok: false, error: 'Only the room host can choose a dice value.' });
+      }
+      const selectedValue = hasSelectedValue && room.hostId === socket.id
+        ? Number(payload.selectedValue)
+        : null;
+      if (hasSelectedValue && (!Number.isInteger(selectedValue) || selectedValue < 1 || selectedValue > 6)) {
+        return callback?.({ ok: false, error: 'Dice value must be between 1 and 6.' });
+      }
+      const { value, movableTokens } = rollDice(game, selectedValue);
       callback?.({ ok: true, value });
       io.to(room.code).emit('dice-rolled', { value, playerId: socket.id, movableTokens });
       io.to(room.code).emit('game-state', publicGameState(room));
